@@ -1,4 +1,5 @@
 "use client";
+export const dynamic = "force-dynamic";
 
 import { useState, useEffect } from 'react';
 import { Pie, Doughnut } from 'react-chartjs-2';
@@ -78,32 +79,31 @@ export default function NutritionPage() {
   const micros = { sodium: 1200, potassium: 2000, iron: 12 };
   const weight = { current: 180, goal: 170 };
   // Add state for weight goal
-  const [weightGoal, setWeightGoal] = useState<number>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('weightGoal');
-      return stored ? Number(stored) : 170;
-    }
-    return 170;
-  });
+  const [weightGoal, setWeightGoal] = useState<number>(170);
+  useEffect(() => {
+    const stored = localStorage.getItem('weightGoal');
+    if (stored) setWeightGoal(Number(stored));
+  }, []);
   // Add state for current weight (could be user input in the future)
-  const [currentWeight, setCurrentWeight] = useState<number>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('currentWeight');
-      return stored ? Number(stored) : 180;
-    }
-    return 180;
-  });
+  const [currentWeight, setCurrentWeight] = useState<number>(180);
+  useEffect(() => {
+    const stored = localStorage.getItem('currentWeight');
+    if (stored) setCurrentWeight(Number(stored));
+  }, []);
   const [showWeightModal, setShowWeightModal] = useState(false);
   const [newWeight, setNewWeight] = useState(currentWeight);
 
   // Weight history state
-  const [weightHistory, setWeightHistory] = useState<{ date: string; weight: number }[]>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('weightHistory');
-      return stored ? JSON.parse(stored) : [];
+  const [weightHistory, setWeightHistory] = useState<{ date: string; weight: number }[]>([]);
+  useEffect(() => {
+    const stored = localStorage.getItem('weightHistory');
+    try {
+      if (stored) setWeightHistory(JSON.parse(stored) as { date: string; weight: number }[]);
+      else setWeightHistory([]);
+    } catch {
+      setWeightHistory([]);
     }
-    return [];
-  });
+  }, []);
   // For the weight modal
   const [weightDate, setWeightDate] = useState(() => new Date().toISOString().slice(0, 10));
 
@@ -743,7 +743,7 @@ export default function NutritionPage() {
     const dateStr = selectedDate.toISOString().slice(0, 10);
     const mealsRaw = localStorage.getItem(`meals-${dateStr}`);
     let loaded: any[] = [];
-    if (typeof mealsRaw === 'string') {
+    if (mealsRaw != null) {
       try {
         loaded = JSON.parse(mealsRaw);
         if (!Array.isArray(loaded)) loaded = [];
@@ -1061,7 +1061,7 @@ export default function NutritionPage() {
     const dateStr = selectedDate.toISOString().slice(0, 10);
     const mealsRaw = localStorage.getItem(`meals-${dateStr}`);
     let meals: any[] = [];
-    if (typeof mealsRaw === 'string') {
+    if (mealsRaw != null) {
       try {
         meals = JSON.parse(mealsRaw);
         if (!Array.isArray(meals)) meals = [];
@@ -1159,6 +1159,27 @@ export default function NutritionPage() {
     boxShadow: `0 0 8px ${color.replace('0.7', '0.5')}`,
     border: `1px solid ${color.replace('0.7', '0.4')}`,
   });
+
+  const [waterHistoryData, setWaterHistoryData] = useState<number[]>([]);
+  const [calorieHistoryData, setCalorieHistoryData] = useState<number[]>([]);
+
+  useEffect(() => {
+    const waterData = Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (6 - i));
+      const dateStr = d.toISOString().slice(0, 10);
+      return parseFloat(localStorage.getItem(`waterIntake-${dateStr}`) || '0');
+    });
+    setWaterHistoryData(waterData);
+
+    const calorieData = Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (6 - i));
+      const dateStr = d.toISOString().slice(0, 10);
+      return parseFloat(localStorage.getItem(`caloriesIntake-${dateStr}`) || '0');
+    });
+    setCalorieHistoryData(calorieData);
+  }, []);
 
   return (
     <main className="min-h-screen p-8 bg-[#111215]">
@@ -1287,9 +1308,10 @@ export default function NutritionPage() {
         <div className="card bg-gradient-to-br from-gray-900/90 to-gray-700/80 border border-gray-700/40 text-white shadow-lg p-6 col-span-1 md:col-span-3 mb-10">
           <h3 className="text-xl font-bold text-white mb-4">Micronutrients</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
-            {Object.entries(microsGoal).map(([name, goalStr]: [string, string]) => {
+            {Object.entries(microsGoal).map(([name, goalStr]) => {
+              const goalStrSafe = String(goalStr);
               const consumed = dailyConsumed.micros[name] || 0;
-              const goalData = parseUnitValue(goalStr);
+              const goalData = parseUnitValue(goalStrSafe);
               const goalValue = goalData.value;
               const unit = goalData.unit;
               const percentage = goalValue > 0 ? Math.min((consumed / goalValue) * 100, 100) : 0;
@@ -1297,7 +1319,7 @@ export default function NutritionPage() {
                 <div key={name}>
                   <div className="flex justify-between items-baseline text-sm mb-1">
                     <span className="font-semibold text-white truncate">{name}</span>
-                    <span className="text-gray-400 text-xs whitespace-nowrap">{consumed.toFixed(1)}{unit} / {goalStr}</span>
+                    <span className="text-gray-400 text-xs whitespace-nowrap">{consumed.toFixed(1)}{unit} / {goalStrSafe}</span>
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-1.5">
                     <div className="bg-green-500 h-1.5 rounded-full" style={{ width: `${percentage}%` }}></div>
@@ -2187,51 +2209,48 @@ export default function NutritionPage() {
             <h2 className="text-2xl font-bold text-white mb-2">Water Intake (Last 7 Days)</h2>
             <div className="bg-gray-800/50 rounded-lg p-4">
               <div className="w-full h-64">
-                <Line
-                  data={{
-                    labels: Array.from({ length: 7 }).map((_, i) => {
-                      const d = new Date();
-                      d.setDate(d.getDate() - (6 - i));
-                      return d.toISOString().slice(0, 10);
-                    }),
-                    datasets: [
-                      {
-                        label: 'Water Intake (L)',
-                        data: Array.from({ length: 7 }).map((_, i) => {
-                          const d = new Date();
-                          d.setDate(d.getDate() - (6 - i));
-                          const dateStr = d.toISOString().slice(0, 10);
-                          return parseFloat(localStorage.getItem(`waterIntake-${dateStr}`) || '0');
-                        }),
-                        borderColor: '#38bdf8',
-                        backgroundColor: 'rgba(56,189,248,0.2)',
-                        tension: 0.3,
-                        fill: true,
-                        pointRadius: 4,
-                        pointBackgroundColor: '#38bdf8',
+                {waterHistoryData.length === 7 && (
+                  <Line
+                    data={{
+                      labels: Array.from({ length: 7 }).map((_, i) => {
+                        const d = new Date();
+                        d.setDate(d.getDate() - (6 - i));
+                        return d.toISOString().slice(0, 10);
+                      }),
+                      datasets: [
+                        {
+                          label: 'Water Intake (L)',
+                          data: waterHistoryData,
+                          borderColor: '#38bdf8',
+                          backgroundColor: 'rgba(56,189,248,0.2)',
+                          tension: 0.3,
+                          fill: true,
+                          pointRadius: 4,
+                          pointBackgroundColor: '#38bdf8',
+                        },
+                      ],
+                    }}
+                    options={{
+                      responsive: true,
+                      plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: true },
                       },
-                    ],
-                  }}
-                  options={{
-                    responsive: true,
-                    plugins: {
-                      legend: { display: false },
-                      tooltip: { enabled: true },
-                    },
-                    scales: {
-                      x: {
-                        title: { display: true, text: 'Date', color: '#fff' },
-                        ticks: { color: '#cbd5e1' },
-                        grid: { color: 'rgba(100,116,139,0.1)' },
+                      scales: {
+                        x: {
+                          title: { display: true, text: 'Date', color: '#fff' },
+                          ticks: { color: '#cbd5e1' },
+                          grid: { color: 'rgba(100,116,139,0.1)' },
+                        },
+                        y: {
+                          title: { display: true, text: 'Liters', color: '#fff' },
+                          ticks: { color: '#cbd5e1' },
+                          grid: { color: 'rgba(100,116,139,0.1)' },
+                        },
                       },
-                      y: {
-                        title: { display: true, text: 'Liters', color: '#fff' },
-                        ticks: { color: '#cbd5e1' },
-                        grid: { color: 'rgba(100,116,139,0.1)' },
-                      },
-                    },
-                  }}
-                />
+                    }}
+                  />
+                )}
               </div>
             </div>
           </div>
@@ -2240,51 +2259,48 @@ export default function NutritionPage() {
             <h2 className="text-2xl font-bold text-white mb-2">Daily Calorie Intake (Last 7 Days)</h2>
             <div className="bg-gray-800/50 rounded-lg p-4">
               <div className="w-full h-64">
-                <Line
-                  data={{
-                    labels: Array.from({ length: 7 }).map((_, i) => {
-                      const d = new Date();
-                      d.setDate(d.getDate() - (6 - i));
-                      return d.toISOString().slice(0, 10);
-                    }),
-                    datasets: [
-                      {
-                        label: 'Calories',
-                        data: Array.from({ length: 7 }).map((_, i) => {
-                          const d = new Date();
-                          d.setDate(d.getDate() - (6 - i));
-                          const dateStr = d.toISOString().slice(0, 10);
-                          return parseFloat(localStorage.getItem(`caloriesIntake-${dateStr}`) || '0');
-                        }),
-                        borderColor: '#fbbf24',
-                        backgroundColor: 'rgba(251,191,36,0.2)',
-                        tension: 0.3,
-                        fill: true,
-                        pointRadius: 4,
-                        pointBackgroundColor: '#fbbf24',
+                {calorieHistoryData.length === 7 && (
+                  <Line
+                    data={{
+                      labels: Array.from({ length: 7 }).map((_, i) => {
+                        const d = new Date();
+                        d.setDate(d.getDate() - (6 - i));
+                        return d.toISOString().slice(0, 10);
+                      }),
+                      datasets: [
+                        {
+                          label: 'Calories',
+                          data: calorieHistoryData,
+                          borderColor: '#fbbf24',
+                          backgroundColor: 'rgba(251,191,36,0.2)',
+                          tension: 0.3,
+                          fill: true,
+                          pointRadius: 4,
+                          pointBackgroundColor: '#fbbf24',
+                        },
+                      ],
+                    }}
+                    options={{
+                      responsive: true,
+                      plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: true },
                       },
-                    ],
-                  }}
-                  options={{
-                    responsive: true,
-                    plugins: {
-                      legend: { display: false },
-                      tooltip: { enabled: true },
-                    },
-                    scales: {
-                      x: {
-                        title: { display: true, text: 'Date', color: '#fff' },
-                        ticks: { color: '#cbd5e1' },
-                        grid: { color: 'rgba(100,116,139,0.1)' },
+                      scales: {
+                        x: {
+                          title: { display: true, text: 'Date', color: '#fff' },
+                          ticks: { color: '#cbd5e1' },
+                          grid: { color: 'rgba(100,116,139,0.1)' },
+                        },
+                        y: {
+                          title: { display: true, text: 'Calories', color: '#fff' },
+                          ticks: { color: '#cbd5e1' },
+                          grid: { color: 'rgba(100,116,139,0.1)' },
+                        },
                       },
-                      y: {
-                        title: { display: true, text: 'Calories', color: '#fff' },
-                        ticks: { color: '#cbd5e1' },
-                        grid: { color: 'rgba(100,116,139,0.1)' },
-                      },
-                    },
-                  }}
-                />
+                    }}
+                  />
+                )}
               </div>
             </div>
           </div>
