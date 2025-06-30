@@ -1,4 +1,7 @@
 @import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --background: #ffffff;
@@ -20,7 +23,56 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  @apply bg-[#111215] text-gray-100 font-sans;
+}
+
+nav {
+  @apply bg-[#18191c] text-white shadow-md;
+}
+
+.card {
+  @apply bg-[#18191c] rounded-xl shadow-lg p-6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  @apply text-white font-bold;
+}
+
+/* Futuristic but subtle button style for builder page */
+button.bg-blue-600, button.bg-blue-700, .btn {
+  background: linear-gradient(90deg, #2563eb 0%, #1e3a8a 100%);
+  color: #fff;
+  border-radius: 1rem;
+  font-family: 'Orbitron', 'Exo', 'Geist', 'Montserrat', 'Arial', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  box-shadow: 0 2px 8px 0 #1e3a8a33;
+  border: none;
+  transition: 
+    background 0.3s,
+    box-shadow 0.3s,
+    transform 0.15s;
+}
+button.bg-blue-600:hover, button.bg-blue-700:hover, .btn:hover {
+  background: linear-gradient(90deg, #1e40af 0%, #2563eb 100%);
+  box-shadow: 0 4px 16px 0 #2563eb33;
+  transform: scale(1.03);
+}
+button.bg-blue-600:active, button.bg-blue-700:active, .btn:active {
+  background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%);
+  box-shadow: 0 1px 4px 0 #1e3a8a22;
+  transform: scale(0.98);
+}
+
+input, textarea, select {
+  @apply bg-[#232428] text-white border border-gray-700 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+}
+
+@keyframes float {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-16px); }
+  100% { transform: translateY(0); }
+}
+.animate-float {
+  animation: float 3s ease-in-out infinite;
 }

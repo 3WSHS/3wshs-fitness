@@ -1,0 +1,25 @@
+{
+  "routines": [
+    {
+      "id": "full-body-beginner",
+      "name": "Full Body Beginner",
+      "description": "A complete full-body workout for beginners",
+      "difficulty": "beginner",
+      "duration": "45-60 minutes",
+      "exercises": [
+        {
+          "exerciseId": "bench-press",
+          "sets": 3,
+          "reps": 10,
+          "restTime": 90
+        },
+        {
+          "exerciseId": "pull-up",
+          "sets": 3,
+          "reps": 8,
+          "restTime": 90
+        }
+      ]
+    }
+  ]
+} 
