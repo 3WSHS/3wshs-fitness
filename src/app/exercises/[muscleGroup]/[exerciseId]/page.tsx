@@ -2,14 +2,14 @@ import Image from 'next/image';
 import Link from 'next/link';
 import exercises from '@/data/exercises.json';
 
-interface ExercisePageProps {
+export default function ExercisePage({
+  params,
+}: {
   params: {
     muscleGroup: string;
     exerciseId: string;
   };
-}
-
-export default function ExercisePage({ params }: ExercisePageProps) {
+}) {
   const muscleGroup = exercises.muscleGroups.find(
     (group) => group.id === params.muscleGroup
   );
